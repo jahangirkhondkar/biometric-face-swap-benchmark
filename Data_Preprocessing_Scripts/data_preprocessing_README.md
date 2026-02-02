@@ -61,6 +61,4 @@ Each stage is independent and can be executed or adapted separately.
 - NumPy
 - SciPy
 
-Exact versions and environment details are documented at the repository level.
-
 ---
