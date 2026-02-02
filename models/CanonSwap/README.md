@@ -18,7 +18,7 @@ Followed exactly as described in the original repository.
 python inference_canswap.py \
   -s examples/source.jpeg \
   -t examples/target.mp4
-
+```
 
 
 
