@@ -1,4 +1,4 @@
-# biometric-face-swap-benchmark
+## biometric-face-swap-benchmark
 
 This repository aggregates verified executions of publicly available
 face-swapping models and provides original preprocessing scripts for
@@ -11,7 +11,6 @@ documented.
 This folder contains all **original preprocessing scripts**
 used for dataset curation, best-frame selection, and pair construction.
 
-## 📄 `models/README.md` (future-proof table)
 
 ```markdown
 # Face-Swapping Models
