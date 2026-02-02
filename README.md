@@ -16,6 +16,6 @@ used for dataset curation, best-frame selection, and pair construction.
 ```markdown
 # Face-Swapping Models
 
-| Model     | Type            | Temporal Modeling | Status      | Notes                  |
+| Model    | Type            | Temporal Modeling | Status      | Notes                  |
 |----------|-----------------|-------------------|-------------|------------------------|
 | CanonSwap| Face Swapping   | Yes               | Verified    | Runs unmodified        |
