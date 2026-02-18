@@ -19,3 +19,6 @@ used for dataset curation, best-frame selection, and pair construction.
 | Model    | Type            | Temporal Modeling | Status      | Notes                  |
 |----------|-----------------|-------------------|-------------|------------------------|
 | CanonSwap| Face Swapping   | Yes               | Verified    | Runs unmodified        |
+|---------------------------------------------------------------------------------------|
+| DiffFace | Face Swapping   | Yes               | Verified    | Runs unmodified        |
+|---------------------------------------------------------------------------------------|
