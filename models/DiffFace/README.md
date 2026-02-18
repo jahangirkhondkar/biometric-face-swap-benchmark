@@ -1,4 +1,4 @@
-# CanonSwap – Verified Execution
+# DiffFace – Verified Execution
 
 This document records how CanonSwap was executed successfully
 on our system **without any modification**.
