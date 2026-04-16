@@ -24,4 +24,6 @@ used for dataset curation, best-frame selection, and pair construction.
 |---------------------------------------------------------------------------------------|
 | REFace   | Face Swapping   | Yes               | Verified    | Runs unmodified        |
 |---------------------------------------------------------------------------------------|
+| VFace    | Face Swapping   | Yes               | Verified    | Runs with modification |
+|---------------------------------------------------------------------------------------|
 
