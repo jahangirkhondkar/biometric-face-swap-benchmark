@@ -26,4 +26,7 @@ used for dataset curation, best-frame selection, and pair construction.
 |---------------------------------------------------------------------------------------|
 | VFace    | Face Swapping   | Yes               | Verified    | Runs with modification |
 |---------------------------------------------------------------------------------------|
+| BlendFace| Face Swapping   | Yes               | Verified    | Runs unmodifed + add additional step
+|---------------------------------------------------------------------------------------|
+
 
