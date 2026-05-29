@@ -93,30 +93,31 @@ Why:
 - To correctly distinguish image-to-image and image-to-video execution modes.
 
 
-### 4. VFace_inference_single.py
+### 4. Video blending code
 
-Problems faced:
-- direct safety-checker dependency caused crashes
-- inversion step mismatch caused missing latent files
-- cached preprocessing could reuse stale transforms
-- the pasted swapped face could appear shifted or shrunk because the script reconstructed the whole frame before compositing
+The image pipeline was converted to CPU execution, but the video blending stage still contained GPU-specific operations.
 
-What was changed:
+Original Code:
+```python
+swap = torch.from_numpy(swap).cuda()
+mask = torch.from_numpy(mask).cuda()
+full_frame = torch.from_numpy(result_frames[i]).cuda()
+mat = torch.from_numpy(tfm_array[j][i]).cuda()
 
-- made safety checker optional
-- changed inversion to use:
-```bash
-inverse_steps = opt.ddim_steps
 ```
-- added support for force reprocessing of cached frames/masks/transforms
-- corrected paste-back logic to composite the swapped face onto the true original frame, instead of a reconstructed background frame
 
-Why:
-- To make video inference stable and to preserve:
-- original frame resolution
-- correct swapped-face placement
-- consistent preprocessing for new videos.
+Changed To:
 
+```python
+swap = torch.from_numpy(swap)
+mask = torch.from_numpy(mask)
+full_frame = torch.from_numpy(result_frames[i])
+mat = torch.from_numpy(tfm_array[j][i])
+
+```
+
+Reason:
+The original implementation assumed CUDA availability and silently failed on unsupported hardware.
 
 ## Command Used
 
@@ -142,18 +143,12 @@ python inference.py \
 
 # VFace – Original Repository Reference
 
-This directory contains only the **modified scripts** derived from the original VFace repository.
+This directory contains only the **modified scripts** derived from the original GHOST repository.
 
-- Original repository: https://github.com/Sanoojan/VFace
-- Paper: Baliah, S., Abeysinghe, Y., Thushara, R., Muhammad, K., Dhall, A., Nandakumar, K., and Khan, M. H. (2026). *VFace: A Training-Free Approach for Diffusion-Based Video Face Swapping*. In **Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)**, pp. 4315–4324.
+- Original repository: https://github.com/ai-forever/ghost
+- Paper: A. Groshev, A. Maltseva, D. Chesakov, A. Kuznetsov and D. Dimitrov, "GHOST—A New Face Swap Approach for Image and Video Domains," in IEEE Access, vol. 10, pp. 83452-83462, 2022, doi: 10.1109/ACCESS.2022.3196668.
 - License: As provided in the original repository
 
-Several scripts were modified to improve reproducibility, environment compatibility, offline model loading, runtime stability, and output alignment within our biometric evaluation pipeline.
+Several scripts were modified to improve reproducibility and environment compatibility.
 
-These changes include:
-- replacing remote model loading with local/offline model paths
-- making safety-checker dependencies optional
-- introducing a stable fallback for FFT-related runtime failures
-- correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
-
-The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+The original GHOST repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
