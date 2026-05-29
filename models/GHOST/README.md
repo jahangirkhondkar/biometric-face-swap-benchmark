@@ -1,64 +1,96 @@
-# VFace – Verified Execution
+# GHOST – Verified Execution
 
-This document records how VFace was executed successfully
+This document records how GHOST was executed successfully
 on our system **with mild modification**.
 
 ## System
 - OS: Linux 6.8.0-106-generic; x86_64
-- Python version: 3.10.13
+- Python version: 3.8.20
 - Virtual Environment: Python Executable
 - CPU: Physical core: 6, Total core: 12
 - GPU: NVIDIA RTX 4500 Ada Generation
-- CUDA (Pytorch): 11.7
+- CUDA Driver: 13.0
 - Key Libraries:
-  - torch: 1.13.1+cu117
-  - torchvision: 0.14.1+cu117
-  - transformers: 4.30.2
-  - huggingface_hub: 0.16.4
+  - torch: 1.6.0+cu101
+  - torchvision: 0.7.0+cu101
+  - 0nnx: 1.9.0
+  - numpy: 1.23.5
+  - mxnet: 1.8.0.post0
 
 ## Installation
-Followed exactly as described in the original repository. In addition-
+The repository was installed following the original instructions. However, the original codebase could not run directly in our environment due to dependency incompatibilities and legacy CUDA assumptions.
 
-The original VFace code did not run reliably in our environment because of several compatibility and runtime issues. To make the pipeline work end-to-end, four scripts were modified for offline model loading, dependency compatibility, runtime stability, and correct video output behavior.
+Several modifications were required to execute the pipeline successfully.
 
-### 1. modules.py
-
-Problem faced:
-The original code loaded CLIP models directly from Hugging Face, which failed in our environment because online model resolution was unreliable.
-
-What was changed:
-- Replaced remote CLIP loading with local pretrained model paths
-- Updated CLIP text/image/model loaders to use the local cached directory
-
-Why:
-To make the project work in offline/local mode and avoid Hugging Face download issues.
-
-### 2. inference.py
+### 1. Dependency Compatibility Fixes
 
 Problem faced:
-The original script imported the Stable Diffusion safety checker directly, which caused dependency/version errors involving diffusers and huggingface_hub.
+The original repository depends on older package versions that are no longer compatible with current Python package releases.
+
+Observed issues included:
+- ONNX protobuf descriptor errors
+- NumPy deprecation issues (np.object)
+- MXNet CUDA runtime failures
+- unavailable onnxruntime-gpu==1.4.0
 
 What was changed:
-- Made the safety checker optional
-- Wrapped safety-checker loading in a try/except
-- Allowed the script to continue even if that component is unavailable
+Installed compatible versions:
+```bash
+protobuf==3.20.3
+numpy==1.23.5
+mxnet==1.8.0.post0
+```
+Replaced unsupported ONNX Runtime dependencies with versions available for the current package repositories.
 
 Why:
-To prevent the script from crashing due to environment-specific library mismatches.
+To restore compatibility between ONNX, InsightFace, MXNet, and modern Python package ecosystems.
 
-### 3. face_swap_utils.py
+
+### 2. CPU Execution Compatibility
 
 Problem faced:
-The original FFT-based attention fusion caused repeated GPU runtime failures:
+The original implementation assumes CUDA availability throughout the inference pipeline.
 
-cuFFT_INTERNAL_ERROR
+Examples:
+```python
+G.cuda()
+netArc.cuda()
+torch.from_numpy(...).cuda()
+```
+On our system:
+```bash
+RuntimeError: CUDA error: no kernel image is available for execution on the device
+```
+because PyTorch 1.6 + CUDA 10.1 does not support the NVIDIA RTX 4500 Ada architecture.
 
 What was changed:
-- Replaced the FFT-based combine_fft_high_low() operation with a safe weighted blending fallback
+- Modified inference scripts to execute on CPU:
+```python
+device = torch.device("cpu")
+
+G = G.to(device).float()
+netArc = netArc.to(device).float()
+
+#Changed InsightFace
+ctx_id = -1
+
+```
+
+
+### 3. Command-Line Argument Fix
+
+What was changed:
+- Replaced
+```python
+parser.add_argument(
+    '--image_to_image',
+    action='store_true'
+)
+
+```
 
 Why:
-- To eliminate cuFFT instability and make the VFace pipeline runnable on our GPU setup.
-- This is a stability workaround, so it prioritizes execution reliability over exact frequency-domain behavior.
+- To correctly distinguish image-to-image and image-to-video execution modes.
 
 
 ### 4. VFace_inference_single.py
@@ -87,18 +119,25 @@ Why:
 
 
 ## Command Used
+
+Image_to_Image
+
 ```bash
-python scripts/VFace_inference_single.py \
-  --target_video examples/FaceSwap/Videos/525.mp4 \
-  --src_image examples/FaceSwap/Source/000_best.jpg \
-  --n_frames "$FRAMES" \
-  --n_samples 1 \
-  --ddim_steps 20 \
-  --precision full \
-  --force_reprocess
+python inference.py \
+  --source_paths input/000_best.jpg \
+  --target_image input/525_best.jpg \
+  --image_to_image \
+  --out_image_name output/ghost_result.jpg
 ```
 
+For_Video
 
+```bash
+python inference.py \
+  --source_paths input/000_best.jpg \
+  --target_video input/525.mp4 \
+  --out_video_name output/ghost_video_result.mp4
+```
 
 
 # VFace – Original Repository Reference
