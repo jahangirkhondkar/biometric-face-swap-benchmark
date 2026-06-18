@@ -1,120 +1,137 @@
-# VFace – Verified Execution
+# BlendFace – Verified Execution
 
-This document records how VFace was executed successfully
-on our system **with mild modification**.
+This document records how BlendFace was successfully executed on our system, with modifications to support full-frame video processing and batch face swapping.
 
 ## System
 - OS: Linux 6.8.0-106-generic; x86_64
 - Python version: 3.10.13
-- Virtual Environment: Python Executable
+- Virtual Environment: blendface_env
 - CPU: Physical core: 6, Total core: 12
 - GPU: NVIDIA RTX 4500 Ada Generation
 - CUDA (Pytorch): 11.7
 - Key Libraries:
   - torch: 1.13.1+cu117
   - torchvision: 0.14.1+cu117
-  - transformers: 4.30.2
-  - huggingface_hub: 0.16.4
+  - numpy: 1.26.4
+  - opencv-python: 4.8.1.78
 
 ## Installation
-Followed exactly as described in the original repository. In addition-
+Followed the original BlendFace repository installation procedure.
 
-The original VFace code did not run reliably in our environment because of several compatibility and runtime issues. To make the pipeline work end-to-end, four scripts were modified for offline model loading, dependency compatibility, runtime stability, and correct video output behavior.
+Additional environment adjustments:
+- Installed PyTorch 1.13.1 + CUDA 11.7
+- Downgraded NumPy to 1.26.4 for compatibility with PyTorch 1.13.1
+- Installed OpenCV 4.8.1 to avoid incompatibilities with NumPy 2.x
+- Downloaded and placed the required pretrained checkpoints:
+  - arcface.pt
+  - blendface.pt
+  - blendswap.pth
 
-### 1. modules.py
+## Modifications
+The original BlendFace implementation supports swapping between a single source image and a single target image. To support biometric evaluation on video datasets, an additional preprocessing and batch-processing pipeline was implemented.
 
-Problem faced:
-The original code loaded CLIP models directly from Hugging Face, which failed in our environment because online model resolution was unreliable.
-
-What was changed:
-- Replaced remote CLIP loading with local pretrained model paths
-- Updated CLIP text/image/model loaders to use the local cached directory
-
-Why:
-To make the project work in offline/local mode and avoid Hugging Face download issues.
-
-### 2. inference.py
+### 1. Full-Frame Processing Pipeline
 
 Problem faced:
-The original script imported the Stable Diffusion safety checker directly, which caused dependency/version errors involving diffusers and huggingface_hub.
-
-What was changed:
-- Made the safety checker optional
-- Wrapped safety-checker loading in a try/except
-- Allowed the script to continue even if that component is unavailable
+The original implementation expects aligned face crops as input. Directly supplying full-resolution video frames caused dimensional mismatches and inference failures.
 
 Why:
-To prevent the script from crashing due to environment-specific library mismatches.
+The BlendFace identity encoder expects fixed-size facial crops rather than full-resolution frames.
 
-### 3. face_swap_utils.py
+### 2. batch_fullframe_swap.py
 
 Problem faced:
-The original FFT-based attention fusion caused repeated GPU runtime failures:
-
-cuFFT_INTERNAL_ERROR
+The repository provides only image-to-image swapping.
 
 What was changed:
-- Replaced the FFT-based combine_fft_high_low() operation with a safe weighted blending fallback
+- A custom batch processing script:
 
 Why:
-- To eliminate cuFFT instability and make the VFace pipeline runnable on our GPU setup.
-- This is a stability workaround, so it prioritizes execution reliability over exact frequency-domain behavior.
+To enable large-scale frame-by-frame face swapping for video datasets and biometric evaluation experiments.
+
+### 3. Temporary Processing Pipeline
+Additional directories were introduced:
+
+```bash
+swapping/
+├── data/
+│   ├── source/
+│   └── target/
+├── temp/
+│   ├── source_crop/
+│   ├── target_crop/
+│   └── swapped_crop/
+└── output/
+    └── full_frames/
+```
 
 
-### 4. VFace_inference_single.py
+Why:
+- Store intermediate facial crops
+- Preserve original frames
+- Simplify debugging and reproducibility
+
+
+### 4. Video Reconstruction
 
 Problems faced:
-- direct safety-checker dependency caused crashes
-- inversion step mismatch caused missing latent files
-- cached preprocessing could reuse stale transforms
-- the pasted swapped face could appear shifted or shrunk because the script reconstructed the whole frame before compositing
+- BlendFace only generates swapped images.
 
 What was changed:
 
-- made safety checker optional
-- changed inversion to use:
+- An FFmpeg-based reconstruction step to convert processed frames back into a video.
+
+Example: 
 ```bash
-inverse_steps = opt.ddim_steps
+ffmpeg -framerate 30 \
+-i output/full_frames/frame_%06d.jpg \
+-c:v libx264 \
+-pix_fmt yuv420p \
+output/swapped_video.mp4
 ```
-- added support for force reprocessing of cached frames/masks/transforms
-- corrected paste-back logic to composite the swapped face onto the true original frame, instead of a reconstructed background frame
 
 Why:
-- To make video inference stable and to preserve:
-- original frame resolution
-- correct swapped-face placement
-- consistent preprocessing for new videos.
+To generate completely swapped videos for evaluation and demonstration.
 
 
 ## Command Used
+
+Batch Face Swapping:
 ```bash
-python scripts/VFace_inference_single.py \
-  --target_video examples/FaceSwap/Videos/525.mp4 \
-  --src_image examples/FaceSwap/Source/000_best.jpg \
-  --n_frames "$FRAMES" \
-  --n_samples 1 \
-  --ddim_steps 20 \
-  --precision full \
-  --force_reprocess
+python batch_fullframe_swap.py \
+    --source data/source/000_best.jpg \
+    --target_dir data/target \
+    --output_dir output/full_frames \
+    --weight checkpoints/blendswap.pth
+```
+
+Video Reconstruction:
+```bash
+ffmpeg -framerate 30 \
+-i output/full_frames/frame_%06d.jpg \
+-c:v libx264 \
+-pix_fmt yuv420p \
+output/swapped_video.mp4
 ```
 
 
-
-
-# VFace – Original Repository Reference
+# BlendFace – Original Repository Reference
 
 This directory contains only the **modified scripts** derived from the original VFace repository.
 
-- Original repository: https://github.com/Sanoojan/VFace
-- Paper: Baliah, S., Abeysinghe, Y., Thushara, R., Muhammad, K., Dhall, A., Nandakumar, K., and Khan, M. H. (2026). *VFace: A Training-Free Approach for Diffusion-Based Video Face Swapping*. In **Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)**, pp. 4315–4324.
+- Original repository: https://github.com/mapooon/BlendFace
+- Paper: Shiohara, K., Yang, X., and Taketomi, T. (2023). BlendFace: Re-designing Identity Encoders for Face-Swapping. In **Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV 2023)**.
 - License: As provided in the original repository
 
-Several scripts were modified to improve reproducibility, environment compatibility, offline model loading, runtime stability, and output alignment within our biometric evaluation pipeline.
+Several additions were made to improve reproducibility and support video-based biometric evaluation.
 
 These changes include:
-- replacing remote model loading with local/offline model paths
-- making safety-checker dependencies optional
-- introducing a stable fallback for FFT-related runtime failures
-- correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
+- automated batch processing of target frames
+- face detection and crop generation
+- temporary crop management
+- full-frame face reinsertion
+- video reconstruction using FFmpeg
+
+The original BlendFace repository remains the primary source for the core face-swapping implementation. This directory documents the additional processing steps used in our experimental pipeline for biometric evaluation and large-scale video face-swapping experiments.
 
 The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
