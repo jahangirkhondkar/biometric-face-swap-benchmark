@@ -7,8 +7,7 @@ on our system **without any modification**.
 - OS: Ubuntu 22.04
 - Python: 3.10
 - CUDA: 12.2
-- GPU: 
-- PyTorch: 
+- GPU: NVIDIA RTX 4500 Ada Generation (24 GB) 
 
 ## Installation
 Followed exactly as described in the original repository.
