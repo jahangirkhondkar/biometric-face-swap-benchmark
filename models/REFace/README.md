@@ -1,21 +1,20 @@
 # REFace – Verified Execution
 
-This document records how CanonSwap was executed successfully
+This document records how REFace was executed successfully
 on our system **without any modification**.
 
 ## System
 - OS: Ubuntu 22.04
 - Python: 3.10
 - CUDA: 12.2
-- GPU: 
-- PyTorch: 
+- GPU: NVIDIA RTX 4500 Ada Generation (24 GB) 
 
 ## Installation
 Followed exactly as described in the original repository.
 
 ## Command Used
 ```bash
-Will update soon
+bash inference_selected.sh
 ```
 
 

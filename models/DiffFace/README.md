@@ -1,6 +1,6 @@
 # DiffFace – Verified Execution
 
-This document records how CanonSwap was executed successfully
+This document records how DiffFace was executed successfully
 on our system **without any modification**.
 
 ## System
