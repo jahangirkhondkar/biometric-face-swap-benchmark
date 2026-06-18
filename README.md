@@ -16,19 +16,32 @@ used for dataset curation, best-frame selection, and pair construction.
 ```markdown
 # Face-Swapping Models
 
-| Model    | Type            | Temporal Modeling | Status      | Notes                  |
-|----------|-----------------|-------------------|-------------|------------------------|
-| CanonSwap| Face Swapping   | Yes               | Verified    | Runs unmodified        |
-|---------------------------------------------------------------------------------------|
-| DiffFace | Face Swapping   | Yes               | Verified    | Runs unmodified        |
-|---------------------------------------------------------------------------------------|
-| REFace   | Face Swapping   | Yes               | Verified    | Runs unmodified        |
-|---------------------------------------------------------------------------------------|
-| VFace    | Face Swapping   | Yes               | Verified    | Runs with modification |
-|---------------------------------------------------------------------------------------|
-| BlendFace| Face Swapping   | Yes               | Verified    | Runs unmodifed + add additional step
-|---------------------------------------------------------------------------------------|
-| GHOST    | Face Swapping   | Yes               | Verified    | Runs with modification |
-|---------------------------------------------------------------------------------------|
+Serial  | Model         | Type            | Temporal Modeling | Status      | Notes                  |
+|-------|---------------|-----------------|-------------------|-------------|------------------------|
+|   1   | CanonSwap     | Face Swapping   | Yes               | Verified    | Runs unmodified        |
+|-------|--------------------------------------------------------------------------------------------|
+|   2   | DiffFace      | Face Swapping   | Yes               | Verified    | Runs unmodified        |
+|-------|--------------------------------------------------------------------------------------------|
+|   3   | REFace        | Face Swapping   | Yes               | Verified    | Runs unmodified        |
+|-------|-------------------------------------------------------------------------------|
+|   4   | VFace         | Face Swapping   | Yes               | Verified    | Runs with modification |
+|-------|-------------------------------------------------------------------------------|
+|   5   | BlendFace     | Face Swapping   | Yes               | Verified    | Runs unmodifed + add additional step
+|-------|-------------------------------------------------------------------------------|
+|   6   | GHOST         | Face Swapping   | Yes               | Verified    | Runs with modification |
+|-------|-------------------------------------------------------------------------------|
+|   7   | DeepFaceLab   | Face Swapping   |
+|-------|---------------------------
+|   8   | E4S           | Face Swapping   |
+|-------|----------------------------
+|   9   | 3dSwap        | Face Swapping   |
+|-------|-----------------------------
+|   10  | VividFace     | Face Swapping   |
+|-------|-----------------------------
+|   11  | ReliableSwap  | Face Swapping   |
+|-------|-------------------------------
+|   12  | FaceDancer    | Face Swapping   |
+|-------|-------------------------------
+|   13  | DiffSwap      | 
 
 
