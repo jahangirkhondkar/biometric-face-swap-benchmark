@@ -1,6 +1,6 @@
 # REFace – Verified Execution
 
-This document records how CanonSwap was executed successfully
+This document records how REFace was executed successfully
 on our system **without any modification**.
 
 ## System
@@ -14,7 +14,7 @@ Followed exactly as described in the original repository.
 
 ## Command Used
 ```bash
-Will update soon
+bash inference_selected.sh
 ```
 
 
