@@ -118,3 +118,5 @@ These changes include:
 - correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
 
 The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+
+## Only provided the modified scripts.##
