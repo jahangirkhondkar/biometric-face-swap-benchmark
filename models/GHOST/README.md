@@ -152,4 +152,5 @@ This directory contains only the **modified scripts** derived from the original 
 Several scripts were modified to improve reproducibility and environment compatibility.
 
 The original GHOST repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
-Only provided the modified scripts.
+
+## Only provided the modified scripts.##
