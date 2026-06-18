@@ -1,120 +1,154 @@
-# VFace – Verified Execution
+# GHOST – Verified Execution
 
-This document records how VFace was executed successfully
+This document records how GHOST was executed successfully
 on our system **with mild modification**.
 
 ## System
 - OS: Linux 6.8.0-106-generic; x86_64
-- Python version: 3.10.13
+- Python version: 3.8.20
 - Virtual Environment: Python Executable
 - CPU: Physical core: 6, Total core: 12
 - GPU: NVIDIA RTX 4500 Ada Generation
-- CUDA (Pytorch): 11.7
+- CUDA Driver: 13.0
 - Key Libraries:
-  - torch: 1.13.1+cu117
-  - torchvision: 0.14.1+cu117
-  - transformers: 4.30.2
-  - huggingface_hub: 0.16.4
+  - torch: 1.6.0+cu101
+  - torchvision: 0.7.0+cu101
+  - 0nnx: 1.9.0
+  - numpy: 1.23.5
+  - mxnet: 1.8.0.post0
 
 ## Installation
-Followed exactly as described in the original repository. In addition-
+The repository was installed following the original instructions. However, the original codebase could not run directly in our environment due to dependency incompatibilities and legacy CUDA assumptions.
 
-The original VFace code did not run reliably in our environment because of several compatibility and runtime issues. To make the pipeline work end-to-end, four scripts were modified for offline model loading, dependency compatibility, runtime stability, and correct video output behavior.
+Several modifications were required to execute the pipeline successfully.
 
-### 1. modules.py
-
-Problem faced:
-The original code loaded CLIP models directly from Hugging Face, which failed in our environment because online model resolution was unreliable.
-
-What was changed:
-- Replaced remote CLIP loading with local pretrained model paths
-- Updated CLIP text/image/model loaders to use the local cached directory
-
-Why:
-To make the project work in offline/local mode and avoid Hugging Face download issues.
-
-### 2. inference.py
+### 1. Dependency Compatibility Fixes
 
 Problem faced:
-The original script imported the Stable Diffusion safety checker directly, which caused dependency/version errors involving diffusers and huggingface_hub.
+The original repository depends on older package versions that are no longer compatible with current Python package releases.
+
+Observed issues included:
+- ONNX protobuf descriptor errors
+- NumPy deprecation issues (np.object)
+- MXNet CUDA runtime failures
+- unavailable onnxruntime-gpu==1.4.0
 
 What was changed:
-- Made the safety checker optional
-- Wrapped safety-checker loading in a try/except
-- Allowed the script to continue even if that component is unavailable
-
-Why:
-To prevent the script from crashing due to environment-specific library mismatches.
-
-### 3. face_swap_utils.py
-
-Problem faced:
-The original FFT-based attention fusion caused repeated GPU runtime failures:
-
-cuFFT_INTERNAL_ERROR
-
-What was changed:
-- Replaced the FFT-based combine_fft_high_low() operation with a safe weighted blending fallback
-
-Why:
-- To eliminate cuFFT instability and make the VFace pipeline runnable on our GPU setup.
-- This is a stability workaround, so it prioritizes execution reliability over exact frequency-domain behavior.
-
-
-### 4. VFace_inference_single.py
-
-Problems faced:
-- direct safety-checker dependency caused crashes
-- inversion step mismatch caused missing latent files
-- cached preprocessing could reuse stale transforms
-- the pasted swapped face could appear shifted or shrunk because the script reconstructed the whole frame before compositing
-
-What was changed:
-
-- made safety checker optional
-- changed inversion to use:
+Installed compatible versions:
 ```bash
-inverse_steps = opt.ddim_steps
+protobuf==3.20.3
+numpy==1.23.5
+mxnet==1.8.0.post0
 ```
-- added support for force reprocessing of cached frames/masks/transforms
-- corrected paste-back logic to composite the swapped face onto the true original frame, instead of a reconstructed background frame
+Replaced unsupported ONNX Runtime dependencies with versions available for the current package repositories.
 
 Why:
-- To make video inference stable and to preserve:
-- original frame resolution
-- correct swapped-face placement
-- consistent preprocessing for new videos.
+To restore compatibility between ONNX, InsightFace, MXNet, and modern Python package ecosystems.
 
+
+### 2. CPU Execution Compatibility
+
+Problem faced:
+The original implementation assumes CUDA availability throughout the inference pipeline.
+
+Examples:
+```python
+G.cuda()
+netArc.cuda()
+torch.from_numpy(...).cuda()
+```
+On our system:
+```bash
+RuntimeError: CUDA error: no kernel image is available for execution on the device
+```
+because PyTorch 1.6 + CUDA 10.1 does not support the NVIDIA RTX 4500 Ada architecture.
+
+What was changed:
+- Modified inference scripts to execute on CPU:
+```python
+device = torch.device("cpu")
+
+G = G.to(device).float()
+netArc = netArc.to(device).float()
+
+#Changed InsightFace
+ctx_id = -1
+
+```
+
+
+### 3. Command-Line Argument Fix
+
+What was changed:
+- Replaced
+```python
+parser.add_argument(
+    '--image_to_image',
+    action='store_true'
+)
+
+```
+
+Why:
+- To correctly distinguish image-to-image and image-to-video execution modes.
+
+
+### 4. Video blending code
+
+The image pipeline was converted to CPU execution, but the video blending stage still contained GPU-specific operations.
+
+Original Code:
+```python
+swap = torch.from_numpy(swap).cuda()
+mask = torch.from_numpy(mask).cuda()
+full_frame = torch.from_numpy(result_frames[i]).cuda()
+mat = torch.from_numpy(tfm_array[j][i]).cuda()
+
+```
+
+Changed To:
+
+```python
+swap = torch.from_numpy(swap)
+mask = torch.from_numpy(mask)
+full_frame = torch.from_numpy(result_frames[i])
+mat = torch.from_numpy(tfm_array[j][i])
+
+```
+
+Reason:
+The original implementation assumed CUDA availability and silently failed on unsupported hardware.
 
 ## Command Used
+
+Image_to_Image
+
 ```bash
-python scripts/VFace_inference_single.py \
-  --target_video examples/FaceSwap/Videos/525.mp4 \
-  --src_image examples/FaceSwap/Source/000_best.jpg \
-  --n_frames "$FRAMES" \
-  --n_samples 1 \
-  --ddim_steps 20 \
-  --precision full \
-  --force_reprocess
+python inference.py \
+  --source_paths input/000_best.jpg \
+  --target_image input/525_best.jpg \
+  --image_to_image \
+  --out_image_name output/ghost_result.jpg
 ```
 
+For_Video
 
+```bash
+python inference.py \
+  --source_paths input/000_best.jpg \
+  --target_video input/525.mp4 \
+  --out_video_name output/ghost_video_result.mp4
+```
 
 
 # VFace – Original Repository Reference
 
-This directory contains only the **modified scripts** derived from the original VFace repository.
+This directory contains only the **modified scripts** derived from the original GHOST repository.
 
-- Original repository: https://github.com/Sanoojan/VFace
-- Paper: Baliah, S., Abeysinghe, Y., Thushara, R., Muhammad, K., Dhall, A., Nandakumar, K., and Khan, M. H. (2026). *VFace: A Training-Free Approach for Diffusion-Based Video Face Swapping*. In **Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)**, pp. 4315–4324.
+- Original repository: https://github.com/ai-forever/ghost
+- Paper: A. Groshev, A. Maltseva, D. Chesakov, A. Kuznetsov and D. Dimitrov, "GHOST—A New Face Swap Approach for Image and Video Domains," in IEEE Access, vol. 10, pp. 83452-83462, 2022, doi: 10.1109/ACCESS.2022.3196668.
 - License: As provided in the original repository
 
-Several scripts were modified to improve reproducibility, environment compatibility, offline model loading, runtime stability, and output alignment within our biometric evaluation pipeline.
+Several scripts were modified to improve reproducibility and environment compatibility.
 
-These changes include:
-- replacing remote model loading with local/offline model paths
-- making safety-checker dependencies optional
-- introducing a stable fallback for FFT-related runtime failures
-- correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
-
-The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+The original GHOST repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.

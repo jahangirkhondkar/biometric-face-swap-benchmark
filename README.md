@@ -28,5 +28,7 @@ used for dataset curation, best-frame selection, and pair construction.
 |---------------------------------------------------------------------------------------|
 | BlendFace| Face Swapping   | Yes               | Verified    | Runs unmodifed + add additional step
 |---------------------------------------------------------------------------------------|
+| GHOST    | Face Swapping   | Yes               | Verified    | Runs with modification |
+|---------------------------------------------------------------------------------------|
 
 
