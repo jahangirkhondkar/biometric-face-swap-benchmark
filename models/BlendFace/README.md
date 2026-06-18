@@ -135,3 +135,5 @@ These changes include:
 The original BlendFace repository remains the primary source for the core face-swapping implementation. This directory documents the additional processing steps used in our experimental pipeline for biometric evaluation and large-scale video face-swapping experiments.
 
 The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+
+## Only provided the modified scripts.##
