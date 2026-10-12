@@ -63,27 +63,7 @@ Contains scripts for biometric evaluation of generated face-swapped images and v
 
 Contains additional utilities and supporting scripts used for experimental processing, automation, visualization, and related research activities.
 
-## Reproducibility
 
-This repository emphasizes transparent documentation and reproducibility.
-
-- Original third-party models are properly referenced.
-- Modifications and additional scripts are documented in the corresponding model directories.
-- Execution environments and commands are provided where applicable.
-- Pretrained model weights and original datasets are not redistributed unless permitted by their respective licenses.
-- Model execution status is documented separately from biometric evaluation results.
-
-## Research Use and Attribution
-
-This repository is maintained for academic research and biometric security evaluation.
-
-All third-party models, datasets, and pretrained weights remain the intellectual property of their respective authors and are subject to their original licenses and usage conditions.
-
-The original model repositories should be consulted for complete implementations, publications, and licensing information.
-
-## Acknowledgment
-
-This work is conducted as part of **CITeR (Center for Identification Technology Research), Project 24F-07C-G: Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation**.
 ```
 ## Face-Swapping Models
 ```markdown
@@ -124,3 +104,24 @@ This work is conducted as part of **CITeR (Center for Identification Technology 
 |-------|---------------|-----------------|-------------|---------------------------------------|
 
 
+## Reproducibility
+
+This repository emphasizes transparent documentation and reproducibility.
+
+- Original third-party models are properly referenced.
+- Modifications and additional scripts are documented in the corresponding model directories.
+- Execution environments and commands are provided where applicable.
+- Pretrained model weights and original datasets are not redistributed unless permitted by their respective licenses.
+- Model execution status is documented separately from biometric evaluation results.
+
+## Research Use and Attribution
+
+This repository is maintained for academic research and biometric security evaluation.
+
+All third-party models, datasets, and pretrained weights remain the intellectual property of their respective authors and are subject to their original licenses and usage conditions.
+
+The original model repositories should be consulted for complete implementations, publications, and licensing information.
+
+## Acknowledgment
+
+This work is conducted as part of **CITeR (Center for Identification Technology Research), Project 24F-07C-G: Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation**.
