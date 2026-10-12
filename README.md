@@ -42,6 +42,9 @@ Serial  | Model         | Type            | Status      | Notes                 
 |-------|-------------------------------
 |   12  | FaceDancer    | Face Swapping   |
 |-------|-------------------------------
-|   13  | DiffSwap      | 
+|   13  | DiffSwap      | Face Swapping   |
+|-------------------------------------------
+|   14  | SimSwap       | Face Swapping   |
+|--------------------------------------------
 
 

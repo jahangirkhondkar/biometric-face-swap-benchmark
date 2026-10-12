@@ -119,4 +119,4 @@ These changes include:
 
 The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
 
-## Only provided the modified scripts.##
+## Only the modified scripts are provided.
