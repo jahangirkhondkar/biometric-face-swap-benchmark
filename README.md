@@ -44,7 +44,8 @@ used for dataset curation, best-frame selection, and pair construction.
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   12  | FaceDancer    | Face Swapping   | Verified    |               Runs unmodified         |
 |-------|---------------|-----------------|-------------|---------------------------------------|
-|   13  | DiffSwap      | Face Swapping   |
+|   13  | DiffSwap      | Face Swapping   | Verified    | Runs with minor modification and      |
+|       |               |                 |             |    additional video scripts           |
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   14  | SimSwap       | Face Swapping   |
 |-------|---------------|-----------------|-------------|---------------------------------------|
