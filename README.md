@@ -42,7 +42,7 @@ used for dataset curation, best-frame selection, and pair construction.
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   11  | ReliableSwap  | Face Swapping   | Verified    |               Runs unmodified         |
 |-------|---------------|-----------------|-------------|---------------------------------------|
-|   12  | FaceDancer    | Face Swapping   |
+|   12  | FaceDancer    | Face Swapping   | Verified    |               Runs unmodified         |
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   13  | DiffSwap      | Face Swapping   |
 |-------|---------------|-----------------|-------------|---------------------------------------|
