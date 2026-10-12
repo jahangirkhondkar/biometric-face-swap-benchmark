@@ -1,5 +1,11 @@
 # biometric-face-swap-benchmark
 
+**CITeR Project**: 24F-07C-G
+**Project Title**: Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation
+
+## Overview
+This repository contains the implementation, preprocessing, and evaluation scripts developed and adapted for **CITeR Project 24F-07C-G: Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation**.
+
 This repository aggregates verified executions of publicly available
 face-swapping models and provides original preprocessing scripts for
 biometric evaluation. All third-party models are included without
@@ -7,11 +13,94 @@ modification unless explicitly stated and are referenced to their
 original repositories. Any future changes or fixes will be clearly
 documented.
 
-## Data Preprocessing Scripts
-This folder contains all **original preprocessing scripts**
-used for dataset curation, best-frame selection, and pair construction.
+## Repository Structure
 
+```bash
+# Biometric Face-Swap Benchmark
 
+**CITeR Project:** 24F-07C-G  
+**Project Title:** Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation
+
+## Overview
+
+This repository contains the implementation, preprocessing, and evaluation scripts developed and adapted for **CITeR Project 24F-07C-G: Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation**.
+
+The project investigates identity preservation in deepfake face-swapping methods and their implications for biometric face recognition systems. It also explores 2D-to-3D facial reconstruction and physical 3D face mask generation.
+
+The repository provides reproducible workflows for executing publicly available face-swapping models, preparing experimental datasets, and evaluating biometric identity preservation.
+
+## Repository Structure
+
+```text
+biometric-face-swap-benchmark/
+│
+├── Data_preprocessing_scripts/
+│
+├── models/
+│   ├── CanonSwap/
+│   ├── DiffFace/
+│   ├── REFace/
+│   ├── VFace/
+│   ├── BlendFace/
+│   ├── GHOST/
+│   ├── DeepFaceLab/
+│   ├── E4S/
+│   ├── 3dSwap/
+│   ├── VividFace/
+│   ├── ReliableSwap/
+│   ├── FaceDancer/
+│   ├── DiffSwap/
+│   └── SimSwap/
+│
+├── Evaluation_scripts/
+│
+├── Other_scripts/
+│
+└── README.md
+```
+
+### 1. Data_preprocessing_scripts
+
+Contains original scripts developed for dataset preparation, including video frame extraction, facial image selection, preprocessing, dataset organization, and source-target pair construction.
+
+### 2. models
+
+Contains implementation documentation and modified or additional scripts for 14 publicly available face-swapping models.
+
+Each model directory includes a dedicated README describing the original repository, execution environment, installation procedure, commands used, implementation adjustments, and verification status.
+
+Only modified or newly developed scripts are included where applicable. Unmodified third-party implementations are referenced through their original repositories.
+
+### 3. Evaluation_scripts
+
+Contains scripts for biometric evaluation of generated face-swapped images and videos, including identity similarity analysis, face recognition-based comparisons, and quantitative performance evaluation.
+
+### 4. Other_scripts
+
+Contains additional utilities and supporting scripts used for experimental processing, automation, visualization, and related research activities.
+
+## Reproducibility
+
+This repository emphasizes transparent documentation and reproducibility.
+
+- Original third-party models are properly referenced.
+- Modifications and additional scripts are documented in the corresponding model directories.
+- Execution environments and commands are provided where applicable.
+- Pretrained model weights and original datasets are not redistributed unless permitted by their respective licenses.
+- Model execution status is documented separately from biometric evaluation results.
+
+## Research Use and Attribution
+
+This repository is maintained for academic research and biometric security evaluation.
+
+All third-party models, datasets, and pretrained weights remain the intellectual property of their respective authors and are subject to their original licenses and usage conditions.
+
+The original model repositories should be consulted for complete implementations, publications, and licensing information.
+
+## Acknowledgment
+
+This work is conducted as part of **CITeR (Center for Identification Technology Research), Project 24F-07C-G: Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation**.
+```
 ## Face-Swapping Models
 ```markdown
 # Face-Swapping Models
