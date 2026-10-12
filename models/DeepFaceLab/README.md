@@ -101,7 +101,7 @@ bash 6_train_Quick96.sh
 
 This directory documents the verified execution procedure and environment adjustments required to run DeepFaceLab on our system.
 
-- Original repository: https://github.com/iperov/DeepFaceLab
+- Original Linux repository: https://github.com/nagadit/DeepFaceLab_Linux
 - Original DeepFaceLab project: https://github.com/iperov/DeepFaceLab
 - Paper: Liu, K., Perov, I., Gao, D., Chervoniy, N., Zhou, W. and Zhang, W., 2023. Deepfacelab: Integrated, flexible and extensible face-swapping framework. Pattern Recognition, 141, p.109628.
 - License: Refer to the original repositories and their applicable license terms.
