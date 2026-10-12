@@ -67,7 +67,7 @@ Contains additional utilities and supporting scripts used for experimental proce
 The following models verified and eecuted for the project
 
 # Face-Swapping Models
-
+```bash
 |Serial | Model         | Type            | Status      |                Notes                  |
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   1   | CanonSwap     | Face Swapping   | Verified    |               Runs unmodified         |
@@ -102,7 +102,7 @@ The following models verified and eecuted for the project
 |   14  | SimSwap       | Face Swapping   |Verified     |               Runs unmodified         |
 |-------|---------------|-----------------|-------------|---------------------------------------|
 
-
+```
 ## Reproducibility
 
 This repository emphasizes transparent documentation and reproducibility.
