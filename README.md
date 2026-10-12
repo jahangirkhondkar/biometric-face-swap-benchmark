@@ -120,7 +120,7 @@ This work is conducted as part of **CITeR (Center for Identification Technology 
 |   13  | DiffSwap      | Face Swapping   | Verified    | Runs with minor modification and      |
 |       |               |                 |             |    additional video scripts           |
 |-------|---------------|-----------------|-------------|---------------------------------------|
-|   14  | SimSwap       | Face Swapping   |
+|   14  | SimSwap       | Face Swapping   |Verified     |               Runs unmodified         |
 |-------|---------------|-----------------|-------------|---------------------------------------|
 
 
