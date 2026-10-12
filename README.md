@@ -1,8 +1,5 @@
 # biometric-face-swap-benchmark
 
-**CITeR Project**: 24F-07C-G
-
-**Project Title**: Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation
 
 ## Overview
 This repository contains the implementation, preprocessing, and evaluation scripts developed and adapted for **CITeR Project 24F-07C-G: Study of Identity Preservation in Deepfake Face Swapping Tools and 3D Mask Creation**.
