@@ -1,122 +1,127 @@
-# VFace – Verified Execution
+# DiffSwap – Verified Execution
 
-This document records how VFace was executed successfully
-on our system **with mild modification**.
+This document records how DiffSwap was successfully executed on our system **with minor compatibility modifications and an additional video-processing script**.
+
+The original DiffSwap face-swapping architecture and pretrained weights were retained. The implementation required resolving dependency compatibility issues, adjusting a Python import, and developing an additional workflow to support image-to-video face swapping.
+
+Both image-to-image and image-to-video face swapping were successfully verified.
 
 ## System
 - OS: Linux 6.8.0-106-generic; x86_64
-- Python version: 3.10.13
-- Virtual Environment: Python Executable
+- Python version: 3.8
+- Virtual Environment: Conda (diffswap_env)
 - CPU: Physical core: 6, Total core: 12
 - GPU: NVIDIA RTX 4500 Ada Generation
 - CUDA (Pytorch): 11.7
+- PyTorch: 1.13.1+cu117
 - Key Libraries:
-  - torch: 1.13.1+cu117
-  - torchvision: 0.14.1+cu117
-  - transformers: 4.30.2
-  - huggingface_hub: 0.16.4
+  - TensorFlow: 2.13.0
+  - MTCNN: 0.1.1
+  - dlib: 19.24.2
+  - Kornia: 0.7.0
+  - PyTorch Lightning: 1.4.2
+  - openai-clip: 1.0.1
+  - Pillow: 9.5.0
 
 ## Installation
-Followed exactly as described in the original repository. In addition-
+The original DiffSwap repository was used as the primary implementation.
 
-The original VFace code did not run reliably in our environment because of several compatibility and runtime issues. To make the pipeline work end-to-end, four scripts were modified for offline model loading, dependency compatibility, runtime stability, and correct video output behavior.
+However, several environment compatibility issues were encountered during installation and inference.
 
-### 1. modules.py
+To execute the pipeline successfully, the following adjustments were required.
 
-Problem faced:
-The original code loaded CLIP models directly from Hugging Face, which failed in our environment because online model resolution was unreliable.
-
-What was changed:
-- Replaced remote CLIP loading with local pretrained model paths
-- Updated CLIP text/image/model loaders to use the local cached directory
-
-Why:
-To make the project work in offline/local mode and avoid Hugging Face download issues.
-
-### 2. inference.py
+### 1. Environment Configuration
 
 Problem faced:
-The original script imported the Stable Diffusion safety checker directly, which caused dependency/version errors involving diffusers and huggingface_hub.
+The original DiffSwap implementation required several dependencies with version compatibility constraints.
+
+During installation, conflicts occurred involving TensorFlow, PyTorch Lightning, dlib, Pillow, and other supporting packages.
 
 What was changed:
-- Made the safety checker optional
-- Wrapped safety-checker loading in a try/except
-- Allowed the script to continue even if that component is unavailable
+- Created a dedicated Conda environment using Python 3.8.
+- Installed PyTorch 1.13.1 with CUDA 11.7 support.
+- Installed compatible versions of TensorFlow, MTCNN, Kornia, and PyTorch Lightning.
+- Installed dlib-bin==19.24.2 to resolve dlib installation issues.
+- Configured Pillow 9.5.0 and other supporting packages.
+- Installed additional dependencies, including SciPy, scikit-image, imutils, transformers, matplotlib, and wandb.
 
 Why:
-To prevent the script from crashing due to environment-specific library mismatches.
+To establish a compatible environment for running the original DiffSwap implementation without changing its model architecture.
 
-### 3. face_swap_utils.py
+### 2. Video Face-Swapping Support
 
 Problem faced:
-The original FFT-based attention fusion caused repeated GPU runtime failures:
+The original DiffSwap inference workflow was designed primarily for image-based face swapping.
 
-cuFFT_INTERNAL_ERROR
+Our biometric evaluation required processing a target video using a single source face image.
 
-What was changed:
-- Replaced the FFT-based combine_fft_high_low() operation with a safe weighted blending fallback
+The evaluation also required processing approximately 150 frames per video.
 
-Why:
-- To eliminate cuFFT instability and make the VFace pipeline runnable on our GPU setup.
-- This is a stability workaround, so it prioritizes execution reliability over exact frequency-domain behavior.
-
-
-### 4. VFace_inference_single.py
-
-Problems faced:
-- direct safety-checker dependency caused crashes
-- inversion step mismatch caused missing latent files
-- cached preprocessing could reuse stale transforms
-- the pasted swapped face could appear shifted or shrunk because the script reconstructed the whole frame before compositing
-
-What was changed:
-
-- made safety checker optional
-- changed inversion to use:
+Additional script:
 ```bash
-inverse_steps = opt.ddim_steps
+run_diffswap_video.sh
 ```
-- added support for force reprocessing of cached frames/masks/transforms
-- corrected paste-back logic to composite the swapped face onto the true original frame, instead of a reconstructed background frame
+
+What was changed:
+- Accepts a source face image and target video.
+- Extracts target video frames.
+- Uses PNG frames to avoid additional lossy compression during intermediate processing.
+- Organizes source and target images for DiffSwap inference.
+- Executes the image-swapping pipeline across video frames.
+- Collects the generated swapped frames.
+- Reconstructs the processed frames into a video.
+- Supports processing up to 150 frames.
 
 Why:
-- To make video inference stable and to preserve:
-- original frame resolution
-- correct swapped-face placement
-- consistent preprocessing for new videos.
+To extend the original image-based DiffSwap implementation for video-based biometric evaluation without modifying the underlying face-swapping architecture.
+
+### 3. Modified Script
+
+```bash
+tests/faceswap_portrait.py
+```
+Type: Modified original script
+
+Modification:
+Corrected the import path for the portrait-processing utility.
+
+Purpose:
+To resolve Python module import errors during inference.
 
 
 ## Command Used
 ```bash
-python scripts/VFace_inference_single.py \
-  --target_video examples/FaceSwap/Videos/525.mp4 \
-  --src_image examples/FaceSwap/Source/000_best.jpg \
-  --n_frames "$FRAMES" \
-  --n_samples 1 \
-  --ddim_steps 20 \
-  --precision full \
-  --force_reprocess
+# Run Image-to-Image Face Swapping
+python pipeline.py
+
+# Run Image-to-Video Face Swapping
+bash run_diffswap_video.sh
 ```
+The script prepares the target video frames, executes DiffSwap inference, and reconstructs the resulting swapped frames into a video.
+
+The source image, target video, and frame limit should be configured according to the supplied script.
 
 
 
+# DiffSwap – Original Repository Reference
 
-# VFace – Original Repository Reference
+This directory contains only the modified and additional scripts required to execute DiffSwap within our biometric face-swapping evaluation pipeline.
 
-This directory contains only the **modified scripts** derived from the original VFace repository.
-
-- Original repository: https://github.com/Sanoojan/VFace
-- Paper: Baliah, S., Abeysinghe, Y., Thushara, R., Muhammad, K., Dhall, A., Nandakumar, K., and Khan, M. H. (2026). *VFace: A Training-Free Approach for Diffusion-Based Video Face Swapping*. In **Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)**, pp. 4315–4324.
+- Original repository: https://github.com/wl-zhao/DiffSwap
+- Paper: Zhao, W., Rao, Y., Shi, W., Liu, Z., Zhou, J. and Lu, J., 2023, June. Diffswap: High-fidelity and controllable face swapping via 3d-aware masked diffusion. In 2023 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) (pp. 8568-8577). IEEE.
 - License: As provided in the original repository
 
-Several scripts were modified to improve reproducibility, environment compatibility, offline model loading, runtime stability, and output alignment within our biometric evaluation pipeline.
+The original DiffSwap model architecture and pretrained model weights were not modified.
+
+Several execution adjustments were required to improve compatibility and extend the model to video processing.
 
 These changes include:
-- replacing remote model loading with local/offline model paths
-- making safety-checker dependencies optional
-- introducing a stable fallback for FFT-related runtime failures
-- correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
+- Configuring a compatible Python, PyTorch, and TensorFlow environment.
+- Resolving dependency installation and compatibility issues.
+- Correcting the portrait-processing module import.
+- Configuring the Python module search path.
+- Developing a video-processing Bash script.
 
-The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+The original DiffSwap repository remains the primary source for the complete model implementation.
 
-## Only the modified scripts are provided.
+## Only the modified and additional scripts are provided.
