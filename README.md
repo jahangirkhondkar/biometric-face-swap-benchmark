@@ -35,7 +35,7 @@ used for dataset curation, best-frame selection, and pair construction.
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   8   | E4S           | Face Swapping   | Verified    | Runs with additional video scripts    |
 |-------|---------------|-----------------|-------------|---------------------------------------|
-|   9   | 3dSwap        | Face Swapping   |
+|   9   | 3dSwap        | Face Swapping   | Verified    |          Runs with modification       |
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   10  | VividFace     | Face Swapping   |
 |-------|---------------|-----------------|-------------|---------------------------------------|
