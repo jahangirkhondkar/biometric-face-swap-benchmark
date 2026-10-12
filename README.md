@@ -66,7 +66,7 @@ Contains additional utilities and supporting scripts used for experimental proce
 ## Models
 The following models verified and eecuted for the project
 
-# Face-Swapping Models
+### Face-Swapping Models
 ```bash
 |Serial | Model         | Type            | Status      |                Notes                  |
 |-------|---------------|-----------------|-------------|---------------------------------------|
