@@ -40,7 +40,7 @@ used for dataset curation, best-frame selection, and pair construction.
 |   10  | VividFace     | Face Swapping   | Verified    | Runs with modification and additional |
 |       |               |                 |             |        preprocessing scripts          |
 |-------|---------------|-----------------|-------------|---------------------------------------|
-|   11  | ReliableSwap  | Face Swapping   |
+|   11  | ReliableSwap  | Face Swapping   | Verified    |               Runs unmodified         |
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   12  | FaceDancer    | Face Swapping   |
 |-------|---------------|-----------------|-------------|---------------------------------------|
