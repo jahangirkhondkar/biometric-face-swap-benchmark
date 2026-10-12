@@ -16,7 +16,7 @@ documented.
 
 ## Repository Structure
 
-```bash
+
 # Biometric Face-Swap Benchmark
 
 **CITeR Project:** 24F-07C-G  
@@ -32,7 +32,7 @@ The repository provides reproducible workflows for executing publicly available 
 
 ## Repository Structure
 
-```text
+```bash
 biometric-face-swap-benchmark/
 │
 ├── Data_preprocessing_scripts/
