@@ -1,122 +1,118 @@
-# VFace – Verified Execution
+# E4S – Verified Execution
 
-This document records how VFace was executed successfully
-on our system **with mild modification**.
+This document records how E4S (Editing in Style) was successfully executed on our system **with additional video-processing scripts and environment configuration adjustments**.
+
+The original E4S face-swapping architecture was retained. We developed additional scripts to support image-to-video face swapping, frame processing, face alignment, and video reconstruction.
 
 ## System
 - OS: Linux 6.8.0-106-generic; x86_64
-- Python version: 3.10.13
-- Virtual Environment: Python Executable
+- Python version: 3.8
+- Virtual Environment: Conda (e4s)
 - CPU: Physical core: 6, Total core: 12
 - GPU: NVIDIA RTX 4500 Ada Generation
-- CUDA (Pytorch): 11.7
+- CUDA (PyTorch): 11.3
 - Key Libraries:
-  - torch: 1.13.1+cu117
-  - torchvision: 0.14.1+cu117
-  - transformers: 4.30.2
-  - huggingface_hub: 0.16.4
-
+  - E4S pretrained model
+  - FaceVid2Vid
+  - GPEN
+  - Face parsing (including SegNeXt-based parsing)
+    
 ## Installation
-Followed exactly as described in the original repository. In addition-
+The original E4S installation instructions were followed, with additional environment configuration and custom video-processing scripts.
 
-The original VFace code did not run reliably in our environment because of several compatibility and runtime issues. To make the pipeline work end-to-end, four scripts were modified for offline model loading, dependency compatibility, runtime stability, and correct video output behavior.
+The core E4S model implementation was not modified.
 
-### 1. modules.py
-
-Problem faced:
-The original code loaded CLIP models directly from Hugging Face, which failed in our environment because online model resolution was unreliable.
-
-What was changed:
-- Replaced remote CLIP loading with local pretrained model paths
-- Updated CLIP text/image/model loaders to use the local cached directory
-
-Why:
-To make the project work in offline/local mode and avoid Hugging Face download issues.
-
-### 2. inference.py
+### 1. Environment Configuration
 
 Problem faced:
-The original script imported the Stable Diffusion safety checker directly, which caused dependency/version errors involving diffusers and huggingface_hub.
+The original E4S implementation required compatible PyTorch, CUDA, and custom CUDA extension dependencies.
+
+During execution, GPU extension compilation errors occurred, particularly in the GPEN-related components.
 
 What was changed:
-- Made the safety checker optional
-- Wrapped safety-checker loading in a try/except
-- Allowed the script to continue even if that component is unavailable
+- Created a dedicated Conda environment using Python 3.8.
+- Installed the dependencies specified in e4s_env.yaml.
+- Configured GCC/G++ 9 for CUDA extension compilation.
+- Adjusted the CUDA architecture configuration to support extension compilation in our environment.
+- Successfully loaded the required pretrained components.
 
 Why:
-To prevent the script from crashing due to environment-specific library mismatches.
+To resolve environment compatibility and CUDA extension compilation issues without modifying the original E4S architecture.
 
-### 3. face_swap_utils.py
+### 2. Pretrained Model Configuration
 
-Problem faced:
-The original FFT-based attention fusion caused repeated GPU runtime failures:
+The following pretrained components were configured:
+- E4S checkpoint: pretrained_ckpts/e4s/iteration_300000.pt
+- Face parsing: pretrained_ckpts/face_parsing/79999_iter.pth
+- FaceVid2Vid: pretrained_ckpts/facevid2vid/00000189-checkpoint.pth.tar
+- GPEN: pretrained weights under pretrained_ckpts/gpen/
 
-cuFFT_INTERNAL_ERROR
+### 3. Image-to-Image Face Swapping
 
-What was changed:
-- Replaced the FFT-based combine_fft_high_low() operation with a safe weighted blending fallback
+The original E4S image-swapping script was used to verify the installation.
 
-Why:
-- To eliminate cuFFT instability and make the VFace pipeline runnable on our GPU setup.
-- This is a stability workaround, so it prioritizes execution reliability over exact frequency-domain behavior.
+Command used:
+```bash
+python scripts/face_swap.py \
+  --source=example/input/faceswap/source.jpg \
+  --target=example/input/faceswap/target.jpg \
+  --lap_bld \
+  --verbose=True
+```
+No modification to the original image-swapping model architecture was required.
 
-
-### 4. VFace_inference_single.py
+### 4. Video Face-Swapping Support
 
 Problems faced:
-- direct safety-checker dependency caused crashes
-- inversion step mismatch caused missing latent files
-- cached preprocessing could reuse stale transforms
-- the pasted swapped face could appear shifted or shrunk because the script reconstructed the whole frame before compositing
+The original image-swapping workflow did not directly provide the complete video-processing procedure required for our biometric evaluation.
+
+Our evaluation required swapping a single source identity into multiple frames of a target video and reconstructing the processed frames into a video.
 
 What was changed:
+An additional video-processing script was developed
 
-- made safety checker optional
-- changed inversion to use:
 ```bash
-inverse_steps = opt.ddim_steps
+video_face_swap.py
 ```
-- added support for force reprocessing of cached frames/masks/transforms
-- corrected paste-back logic to composite the swapped face onto the true original frame, instead of a reconstructed background frame
+This script extended the original E4S inference workflow.
 
 Why:
-- To make video inference stable and to preserve:
-- original frame resolution
-- correct swapped-face placement
-- consistent preprocessing for new videos.
-
+To enable E4S to process video datasets consistently with the other face-swapping models included in our biometric evaluation pipeline.
 
 ## Command Used
 ```bash
-python scripts/VFace_inference_single.py \
-  --target_video examples/FaceSwap/Videos/525.mp4 \
-  --src_image examples/FaceSwap/Source/000_best.jpg \
-  --n_frames "$FRAMES" \
-  --n_samples 1 \
-  --ddim_steps 20 \
-  --precision full \
-  --force_reprocess
+
+# Run Image-to-Image Face Swapping
+python scripts/face_swap.py \
+  --source=example/input/faceswap/source.jpg \
+  --target=example/input/faceswap/target.jpg \
+  --lap_bld \
+  --verbose=True
+
+# Run Video Face Swapping
+python video_face_swap \
+  --source_image data/source/000.jpg \
+  --target_video data/target/525.mp4 \
+  --output_video outputs/000_525_square_swap.mp4 \
+  --output_face_video outputs/000_525_target_square_faces.mp4 \
+  --lap_bld \
+  --max_frames 150
+
 ```
 
 
+# E4S – Original Repository Reference
 
+This directory contains only the **additional scripts developed to extend the original E4S implementation for video face swapping**.
 
-# VFace – Original Repository Reference
-
-This directory contains only the **modified scripts** derived from the original VFace repository.
-
-- Original repository: https://github.com/Sanoojan/VFace
-- Paper: Baliah, S., Abeysinghe, Y., Thushara, R., Muhammad, K., Dhall, A., Nandakumar, K., and Khan, M. H. (2026). *VFace: A Training-Free Approach for Diffusion-Based Video Face Swapping*. In **Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)**, pp. 4315–4324.
+- Original repository: https://github.com/e4s2022/e4s
+- Paper: Liu, Z., Li, M., Zhang, Y., Wang, C., Zhang, Q., Wang, J. and Nie, Y., 2023, June. Fine-grained face swapping via regional gan inversion. In 2023 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) (pp. 8578-8587). IEEE.
 - License: As provided in the original repository
 
-Several scripts were modified to improve reproducibility, environment compatibility, offline model loading, runtime stability, and output alignment within our biometric evaluation pipeline.
+No modifications were made to the core E4S model architecture or pretrained model weights.
 
-These changes include:
-- replacing remote model loading with local/offline model paths
-- making safety-checker dependencies optional
-- introducing a stable fallback for FFT-related runtime failures
-- correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
+The original E4S repository remains the primary source for the complete model implementation.
 
-The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+This directory is included to document the additional scripts and execution adjustments used in our biometric evaluation pipeline.
 
-## Only the modified scripts are provided.
+## Only the additional video-processing scripts are provided.
