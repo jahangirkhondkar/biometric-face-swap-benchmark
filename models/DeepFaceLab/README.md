@@ -1,122 +1,122 @@
-# VFace – Verified Execution
+# DeepFaceLab – Verified Execution
 
-This document records how VFace was executed successfully
-on our system **with mild modification**.
+This document records how DeepFaceLab was successfully executed on our system **without modification to the core model implementation**, but with environment configuration and execution adjustments.
 
 ## System
 - OS: Linux 6.8.0-106-generic; x86_64
-- Python version: 3.10.13
-- Virtual Environment: Python Executable
+- Python version: 3.7
+- Virtual Environment: Conda (deepfacelab)
 - CPU: Physical core: 6, Total core: 12
-- GPU: NVIDIA RTX 4500 Ada Generation
-- CUDA (Pytorch): 11.7
-- Key Libraries:
-  - torch: 1.13.1+cu117
-  - torchvision: 0.14.1+cu117
-  - transformers: 4.30.2
-  - huggingface_hub: 0.16.4
+- GPU: 2 x NVIDIA RTX 4500 Ada Generation (24 GB each)
+- CUDA Toolkit: 10.1.243
+- TensorFlow: 2.4.0
+- cuDNN: 8.0.5
+- Model: Quick96 (pretrained initialization)
 
 ## Installation
-Followed exactly as described in the original repository. In addition-
+The installation followed the original DeepFaceLab Linux repository instructions, with additional dependency configuration and runtime adjustments required for our hardware environment.
 
-The original VFace code did not run reliably in our environment because of several compatibility and runtime issues. To make the pipeline work end-to-end, four scripts were modified for offline model loading, dependency compatibility, runtime stability, and correct video output behavior.
+The original implementation was designed around older TensorFlow and CUDA dependencies. Therefore, a dedicated Conda environment was created to support execution.
 
-### 1. modules.py
-
-Problem faced:
-The original code loaded CLIP models directly from Hugging Face, which failed in our environment because online model resolution was unreliable.
-
-What was changed:
-- Replaced remote CLIP loading with local pretrained model paths
-- Updated CLIP text/image/model loaders to use the local cached directory
-
-Why:
-To make the project work in offline/local mode and avoid Hugging Face download issues.
-
-### 2. inference.py
+### 1. Environment Configuration
 
 Problem faced:
-The original script imported the Stable Diffusion safety checker directly, which caused dependency/version errors involving diffusers and huggingface_hub.
+DeepFaceLab required legacy Python, TensorFlow, CUDA, and cuDNN dependencies that were not directly compatible with our default system environment.
 
 What was changed:
-- Made the safety checker optional
-- Wrapped safety-checker loading in a try/except
-- Allowed the script to continue even if that component is unavailable
+- Created a dedicated Conda environment using Python 3.7.
+- Installed TensorFlow 2.4.0.
+- Configured CUDA Toolkit 10.1.243 and compatible cuDNN libraries.
+- Adjusted the runtime environment to resolve library compatibility issues.
+- Verified that TensorFlow could detect the NVIDIA GPU.
 
 Why:
-To prevent the script from crashing due to environment-specific library mismatches.
+To establish a compatible environment for running the original DeepFaceLab implementation without modifying the model architecture.
 
-### 3. face_swap_utils.py
+### 2. Face Extraction
 
 Problem faced:
-The original FFT-based attention fusion caused repeated GPU runtime failures:
-
-cuFFT_INTERNAL_ERROR
+The S3FD face detector encountered runtime failures during GPU-based face extraction.
 
 What was changed:
-- Replaced the FFT-based combine_fft_high_low() operation with a safe weighted blending fallback
+- Switched the face extraction process from GPU to CPU.
+- Used the original S3FD extraction functionality.
+- Successfully extracted and aligned faces from the video frames.
 
 Why:
-- To eliminate cuFFT instability and make the VFace pipeline runnable on our GPU setup.
-- This is a stability workaround, so it prioritizes execution reliability over exact frequency-domain behavior.
+To avoid GPU runtime failures while maintaining the original face detection and alignment procedure.
 
+The CPU-based extraction successfully processed 475 frames during our test.
 
-### 4. VFace_inference_single.py
+### 3. Quick96 Model Training
 
-Problems faced:
-- direct safety-checker dependency caused crashes
-- inversion step mismatch caused missing latent files
-- cached preprocessing could reuse stale transforms
-- the pasted swapped face could appear shifted or shrunk because the script reconstructed the whole frame before compositing
+Model Used: Quick96
 
-What was changed:
-
-- made safety checker optional
-- changed inversion to use:
-```bash
-inverse_steps = opt.ddim_steps
-```
-- added support for force reprocessing of cached frames/masks/transforms
-- corrected paste-back logic to composite the swapped face onto the true original frame, instead of a reconstructed background frame
+What done:
+- Downloaded the pretrained Quick96 model.
+- Prepared the source and target face datasets.
+- Initialized training using the pretrained weights.
+- Continued training on the prepared face datasets.
+- Successfully executed approximately 56,471 training iterations.
 
 Why:
-- To make video inference stable and to preserve:
-- original frame resolution
-- correct swapped-face placement
-- consistent preprocessing for new videos.
+Quick96 provides a pretrained starting point for testing the complete DeepFaceLab face-swapping workflow without training a model entirely from scratch.
+
+
+### 4. Face Merging and Video Generation
+
+What was done:
+- Used the trained Quick96 model for face swapping.
+- Generated swapped frames using the original merging pipeline.
+- Used overlay-based merging.
+- Reconstructed the final swapped video.
+
+Observation:
+
+The face-swapping pipeline executed successfully and generated a swapped video.
+
+However, visible boundaries around the swapped facial region were observed in some frames. These artifacts may be associated with mask blending, color differences, and face alignment.
+
+No changes to the core merging algorithm were introduced.
 
 
 ## Command Used
 ```bash
-python scripts/VFace_inference_single.py \
-  --target_video examples/FaceSwap/Videos/525.mp4 \
-  --src_image examples/FaceSwap/Source/000_best.jpg \
-  --n_frames "$FRAMES" \
-  --n_samples 1 \
-  --ddim_steps 20 \
-  --precision full \
-  --force_reprocess
+
+# Extract Video Frames
+bash 2_extract_image_from_data_src.sh
+bash 3_extract_image_from_data_dst.sh
+
+#Extract and Align Faces
+bash 4_data_src_extract_faces_S3FD.sh
+bash 5_data_dst_extract_faces_S3FD.sh
+
+bash 6_train_Quick96.sh
 ```
 
 
 
 
-# VFace – Original Repository Reference
+# DeepFaceLab  – Original Repository Reference
 
-This directory contains only the **modified scripts** derived from the original VFace repository.
+This directory documents the verified execution procedure and environment adjustments required to run DeepFaceLab on our system.
 
-- Original repository: https://github.com/Sanoojan/VFace
-- Paper: Baliah, S., Abeysinghe, Y., Thushara, R., Muhammad, K., Dhall, A., Nandakumar, K., and Khan, M. H. (2026). *VFace: A Training-Free Approach for Diffusion-Based Video Face Swapping*. In **Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)**, pp. 4315–4324.
-- License: As provided in the original repository
+- Original repository: https://github.com/iperov/DeepFaceLab
+- Original DeepFaceLab project: https://github.com/iperov/DeepFaceLab
+- Paper: Liu, K., Perov, I., Gao, D., Chervoniy, N., Zhou, W. and Zhang, W., 2023. Deepfacelab: Integrated, flexible and extensible face-swapping framework. Pattern Recognition, 141, p.109628.
+- License: Refer to the original repositories and their applicable license terms.
 
-Several scripts were modified to improve reproducibility, environment compatibility, offline model loading, runtime stability, and output alignment within our biometric evaluation pipeline.
+No modifications were made to the core DeepFaceLab model architecture or training algorithms.
 
-These changes include:
-- replacing remote model loading with local/offline model paths
-- making safety-checker dependencies optional
-- introducing a stable fallback for FFT-related runtime failures
-- correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
+The implementation required:
 
-The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+- Configuring a compatible legacy TensorFlow/CUDA environment.
+- Resolving runtime dependency issues.
+- Switching S3FD face extraction from GPU to CPU.
+- Preparing source and target video datasets.
+- Training the Quick96 model using pretrained initialization.
+- Executing the original merging pipeline to generate swapped video output.
 
-## Only provided the modified scripts.##
+The original DeepFaceLab repositories remain the primary sources for the full implementation.
+
+This documentation is included to support reproducibility and to record the environment-specific execution process used in our biometric face-swapping evaluation project.
