@@ -1,101 +1,110 @@
-# VFace – Verified Execution
+# 3dSwap – Verified Execution
 
-This document records how VFace was executed successfully
-on our system **with mild modification**.
+This document records how 3dSwap was executed on our system **with additional dataset preparation, camera-pose configuration, and inference adjustments**.
 
 ## System
 - OS: Linux 6.8.0-106-generic; x86_64
-- Python version: 3.10.13
-- Virtual Environment: Python Executable
+- Python version: 3.8
+- Virtual Environment: Conda (3dswap_env)
 - CPU: Physical core: 6, Total core: 12
 - GPU: NVIDIA RTX 4500 Ada Generation
-- CUDA (Pytorch): 11.7
-- Key Libraries:
-  - torch: 1.13.1+cu117
-  - torchvision: 0.14.1+cu117
-  - transformers: 4.30.2
-  - huggingface_hub: 0.16.4
+- Model: 3dSwap
+- Key Components:
+  - EG3D-based 3D-aware generator
+  - Pretrained encoder
+  - MLP network
+  - ArcFace identity model
+  - Camera-pose estimation and processing
 
 ## Installation
-Followed exactly as described in the original repository. In addition-
+The original 3dSwap installation instructions were followed, with additional environment configuration, pretrained checkpoint preparation, and dataset adjustments.
 
-The original VFace code did not run reliably in our environment because of several compatibility and runtime issues. To make the pipeline work end-to-end, four scripts were modified for offline model loading, dependency compatibility, runtime stability, and correct video output behavior.
-
-### 1. modules.py
+### 1. Environment Configuration
 
 Problem faced:
-The original code loaded CLIP models directly from Hugging Face, which failed in our environment because online model resolution was unreliable.
+The original 3dSwap implementation required specific dependencies and pretrained models for 3D-aware facial reconstruction and swapping.
 
 What was changed:
-- Replaced remote CLIP loading with local pretrained model paths
-- Updated CLIP text/image/model loaders to use the local cached directory
+- Created a dedicated Conda environment using Python 3.8.
+- Configured the required PyTorch and supporting dependencies.
+- Prepared the pretrained checkpoints.
+- Configured local paths for the models and dataset.
+- Prepared camera-pose inputs compatible with the inference pipeline.
 
 Why:
-To make the project work in offline/local mode and avoid Hugging Face download issues.
+To execute the original 3dSwap pipeline using our local computational environment and facial image dataset.
 
-### 2. inference.py
+### 2. Dataset Preparation
 
 Problem faced:
-The original script imported the Stable Diffusion safety checker directly, which caused dependency/version errors involving diffusers and huggingface_hub.
+The inference pipeline required facial images and corresponding camera-pose information in a specific directory structure.
 
 What was changed:
-- Made the safety checker optional
-- Wrapped safety-checker loading in a try/except
-- Allowed the script to continue even if that component is unavailable
-
-Why:
-To prevent the script from crashing due to environment-specific library mismatches.
-
-### 3. face_swap_utils.py
-
-Problem faced:
-The original FFT-based attention fusion caused repeated GPU runtime failures:
-
-cuFFT_INTERNAL_ERROR
-
-What was changed:
-- Replaced the FFT-based combine_fft_high_low() operation with a safe weighted blending fallback
-
-Why:
-- To eliminate cuFFT instability and make the VFace pipeline runnable on our GPU setup.
-- This is a stability workaround, so it prioritizes execution reliability over exact frequency-domain behavior.
-
-
-### 4. VFace_inference_single.py
-
-Problems faced:
-- direct safety-checker dependency caused crashes
-- inversion step mismatch caused missing latent files
-- cached preprocessing could reuse stale transforms
-- the pasted swapped face could appear shifted or shrunk because the script reconstructed the whole frame before compositing
-
-What was changed:
-
-- made safety checker optional
-- changed inversion to use:
+Prepared the CelebA-HD dataset structure:
 ```bash
-inverse_steps = opt.ddim_steps
+datasets/
+└── CelebA-HD/
+    ├── final_crops/
+    │   ├── 0.jpg
+    │   ├── 1.jpg
+    │   ├── 2.jpg
+    │   └── ...
+    └── camera_pose/
+        ├── 0.npy
+        ├── 1.npy
+        ├── 2.npy
+        └── ...
 ```
-- added support for force reprocessing of cached frames/masks/transforms
-- corrected paste-back logic to composite the swapped face onto the true original frame, instead of a reconstructed background frame
+Each image was paired with a corresponding camera-pose file.
 
 Why:
-- To make video inference stable and to preserve:
-- original frame resolution
-- correct swapped-face placement
-- consistent preprocessing for new videos.
+The EG3D-based generator uses camera conditioning to control the 3D-aware rendering process. Therefore, corresponding camera-pose information is required for inference.
+
+### 3. Camera-Pose Processing
+
+Problem faced:
+The camera-pose files were not always stored as directly usable numerical arrays.
+
+Some .npy files contained serialized Python objects or dictionaries rather than a flat camera-conditioning vector.
+
+What was changed:
+- Inspected the contents and shapes of the camera-pose files.
+- Identified the stored camera parameters.
+- Prepared the camera-conditioning inputs required by the model.
+- Used corresponding image and camera-pose filenames to maintain consistency.
+
+Why:
+To ensure that the camera-conditioning information could be loaded and interpreted correctly by the 3D-aware generator.
+
+The EG3D camera-conditioning representation commonly contains 25 values, comprising camera extrinsic and intrinsic parameters.
+
+
+### 4. 3D-Aware Face-Swapping Inference
+
+Script used:
+```bash
+run_3dSwap.py
+```
+
+What was done:
+- Loaded the pretrained generator and associated model components.
+- Selected source and target images using dataset indices.
+- Loaded the corresponding camera-pose information.
+- Executed the optimization-based inference procedure.
+- Tested the pipeline using 500 optimization iterations.
+
+Why:
+To evaluate the 3D-aware face-swapping procedure using the prepared image dataset and pretrained models.
 
 
 ## Command Used
 ```bash
-python scripts/VFace_inference_single.py \
-  --target_video examples/FaceSwap/Videos/525.mp4 \
-  --src_image examples/FaceSwap/Source/000_best.jpg \
-  --n_frames "$FRAMES" \
-  --n_samples 1 \
-  --ddim_steps 20 \
-  --precision full \
-  --force_reprocess
+python run_3dSwap.py \
+  --from_index 0 \
+  --to_index 1 \
+  --epoch 500 \
+  --lr 3e-4 \
+  --dataroot datasets/CelebA-HD
 ```
 
 
@@ -103,20 +112,19 @@ python scripts/VFace_inference_single.py \
 
 # VFace – Original Repository Reference
 
-This directory contains only the **modified scripts** derived from the original VFace repository.
+This directory documents the **environment configuration, dataset preparation, camera-pose handling, and inference procedure** used to execute 3dSwap.
 
-- Original repository: https://github.com/Sanoojan/VFace
-- Paper: Baliah, S., Abeysinghe, Y., Thushara, R., Muhammad, K., Dhall, A., Nandakumar, K., and Khan, M. H. (2026). *VFace: A Training-Free Approach for Diffusion-Based Video Face Swapping*. In **Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)**, pp. 4315–4324.
+- Original repository: https://github.com/lyx0208/3dSwap
+- Paper: Li, Y., Ma, C., Yan, Y., Zhu, W. and Yang, X., 2023, June. 3d-aware face swapping. In 2023 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) (pp. 12705-12714). IEEE.
 - License: As provided in the original repository
 
-Several scripts were modified to improve reproducibility, environment compatibility, offline model loading, runtime stability, and output alignment within our biometric evaluation pipeline.
+No modifications to the original model architecture or pretrained weights are documented.
 
-These changes include:
-- replacing remote model loading with local/offline model paths
-- making safety-checker dependencies optional
-- introducing a stable fallback for FFT-related runtime failures
-- correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
+The original 3dSwap repository remains the primary source for the complete model implementation.
 
-The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+This documentation is included to support reproducibility and record the environment-specific execution procedure used in our biometric face-swapping evaluation pipeline.
+Modified or Additional Scripts
 
-## Only the modified scripts are provided.
+The inference workflow used run_3dSwap.py
+
+## Only the modified script is provided.
