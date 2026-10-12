@@ -1,122 +1,154 @@
-# VFace – Verified Execution
+# VividFace – Verified Execution
 
-This document records how VFace was executed successfully
-on our system **with mild modification**.
+This document records how VividFace was successfully executed on our system **with environment adjustments, pretrained model path configuration, additional preprocessing scripts, and minor inference modifications**.
+
+The original VividFace model architecture was retained. Additional preprocessing scripts and inference adjustments were used to support custom source images and target videos within our biometric evaluation pipeline.
 
 ## System
 - OS: Linux 6.8.0-106-generic; x86_64
-- Python version: 3.10.13
-- Virtual Environment: Python Executable
+- Python version: 3.8.20
+- Virtual Environment: vividface_env
 - CPU: Physical core: 6, Total core: 12
 - GPU: NVIDIA RTX 4500 Ada Generation
-- CUDA (Pytorch): 11.7
+- PyTorch: 2.4.1+cu121
+- CUDA (PyTorch): 12.1
 - Key Libraries:
-  - torch: 1.13.1+cu117
-  - torchvision: 0.14.1+cu117
-  - transformers: 4.30.2
-  - huggingface_hub: 0.16.4
+  - diffusers: 0.27.2
+  - nvdiffrast: 0.3.0
+  - torchvision
+  - transformers
 
 ## Installation
-Followed exactly as described in the original repository. In addition-
+The original VividFace installation instructions were followed. However, several environment compatibility issues, pretrained model loading problems, and input-processing limitations were encountered.
 
-The original VFace code did not run reliably in our environment because of several compatibility and runtime issues. To make the pipeline work end-to-end, four scripts were modified for offline model loading, dependency compatibility, runtime stability, and correct video output behavior.
+To execute the pipeline successfully, the following adjustments were made.
 
-### 1. modules.py
-
-Problem faced:
-The original code loaded CLIP models directly from Hugging Face, which failed in our environment because online model resolution was unreliable.
-
-What was changed:
-- Replaced remote CLIP loading with local pretrained model paths
-- Updated CLIP text/image/model loaders to use the local cached directory
-
-Why:
-To make the project work in offline/local mode and avoid Hugging Face download issues.
-
-### 2. inference.py
+### 1. Environment Configuration
 
 Problem faced:
-The original script imported the Stable Diffusion safety checker directly, which caused dependency/version errors involving diffusers and huggingface_hub.
+The original implementation required several dependencies, including nvdiffrast, which initially failed during installation because of CUDA extension compilation issues.
 
 What was changed:
-- Made the safety checker optional
-- Wrapped safety-checker loading in a try/except
-- Allowed the script to continue even if that component is unavailable
+- Created a dedicated Python 3.8 environment.
+- Installed PyTorch 2.4.1 with CUDA 12.1 support.
+- Installed diffusers 0.27.2 and supporting dependencies.
+- Resolved the CUDA extension installation issue by installing nvdiffrast version 0.3.0.
+- Verified GPU availability through PyTorch.
 
 Why:
-To prevent the script from crashing due to environment-specific library mismatches.
+To establish a compatible runtime environment for executing the pretrained VividFace inference pipeline.
 
-### 3. face_swap_utils.py
+### 2. Custom Source Image and Target Video Support
 
 Problem faced:
-The original FFT-based attention fusion caused repeated GPU runtime failures:
+The original example-based inference workflow required a specific directory structure and input format.
 
-cuFFT_INTERNAL_ERROR
+Our biometric evaluation required using a custom source face image and target video.
 
 What was changed:
-- Replaced the FFT-based combine_fft_high_low() operation with a safe weighted blending fallback
+Two additional preprocessing scripts were developed:
+```bash
+generate_vividface_txt.py
+prepare_vividface_target.py
+```
+These scripts were used to prepare the target video and associated metadata for inference.
 
 Why:
-- To eliminate cuFFT instability and make the VFace pipeline runnable on our GPU setup.
-- This is a stability workaround, so it prioritizes execution reliability over exact frequency-domain behavior.
+To support our custom source and target datasets without modifying the underlying face-swapping architecture.
+
+### 3. Target Video Cropping
+
+Problem faced:
+Direct inference using the original full-resolution target video resulted in a tensor reshaping error:
+
+```bash
+shape '[-1, 1, 512, 512]'
+```
+The model's preprocessing pipeline expected a compatible spatial input size.
+
+What was changed:
+- Added target video preprocessing.
+- Cropped the target video to a 512 × 512 square format.
+- Prepared the source image, target video, and metadata in the directory structure expected by VividFace.
+
+The prepared input structure was:
+
+```bash
+my_examples_cropped/
+├── faces/
+│   └── 1.jpg
+├── videos/
+│   └── 1.mp4
+└── 1.txt
+```
 
 
-### 4. VFace_inference_single.py
+Why:
+To ensure that the target frames matched the expected model input dimensions and avoid tensor shape mismatches during inference.
+
+
+### 4. Inference Frame-Length Modification
 
 Problems faced:
-- direct safety-checker dependency caused crashes
-- inversion step mismatch caused missing latent files
-- cached preprocessing could reuse stale transforms
-- the pasted swapped face could appear shifted or shrunk because the script reconstructed the whole frame before compositing
+The original inference script limited video processing to 80 frames.
+
+Our evaluation required processing at least 150 frames for each target video.
+
+Script Modified:
+```bash
+infer.py
+```
 
 What was changed:
 
-- made safety checker optional
-- changed inversion to use:
+- The frame-length limitation was adjusted to:
 ```bash
-inverse_steps = opt.ddim_steps
+video_length = min(video_length, 152)
 ```
-- added support for force reprocessing of cached frames/masks/transforms
-- corrected paste-back logic to composite the swapped face onto the true original frame, instead of a reconstructed background frame
 
 Why:
-- To make video inference stable and to preserve:
-- original frame resolution
-- correct swapped-face placement
-- consistent preprocessing for new videos.
+To support longer face-swapping sequences for biometric evaluation while preserving the original inference architecture.
+
+For a 25 FPS video, 152 frames correspond to approximately 6.08 seconds.
+
+This adjustment changes the maximum processed sequence length, not the pretrained model weights or network architecture.
 
 
 ## Command Used
 ```bash
-python scripts/VFace_inference_single.py \
-  --target_video examples/FaceSwap/Videos/525.mp4 \
-  --src_image examples/FaceSwap/Source/000_best.jpg \
-  --n_frames "$FRAMES" \
-  --n_samples 1 \
-  --ddim_steps 20 \
-  --precision full \
-  --force_reprocess
+# Generate Target Video Metadata
+python generate_vividface_txt.py \
+  --video data/target/525.mp4 \
+  --output data/target/525.txt
+
+# Run VividFace
+python infer.py my_examples_cropped
 ```
 
 
+# VividFace – Original Repository Reference
 
+This directory contains the **additional preprocessing scripts and modified inference code** used to execute VividFace with our custom biometric dataset.
 
-# VFace – Original Repository Reference
-
-This directory contains only the **modified scripts** derived from the original VFace repository.
-
-- Original repository: https://github.com/Sanoojan/VFace
-- Paper: Baliah, S., Abeysinghe, Y., Thushara, R., Muhammad, K., Dhall, A., Nandakumar, K., and Khan, M. H. (2026). *VFace: A Training-Free Approach for Diffusion-Based Video Face Swapping*. In **Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)**, pp. 4315–4324.
+- Original repository: https://github.com/deepcs233/VividFace
+- Paper: Shao, H., Wang, S., Zhou, Y., Song, G., He, D., Qin, S., Zong, Z., Ma, B., Liu, Y. and Li, H., 2024. Vividface: A diffusion-based hybrid framework for high-fidelity video face swapping. arXiv preprint arXiv:2412.11279.
 - License: As provided in the original repository
 
-Several scripts were modified to improve reproducibility, environment compatibility, offline model loading, runtime stability, and output alignment within our biometric evaluation pipeline.
+The original VividFace model architecture and pretrained model weights were not modified.
+
+Several execution adjustments were required to improve compatibility and reproducibility.
 
 These changes include:
-- replacing remote model loading with local/offline model paths
-- making safety-checker dependencies optional
-- introducing a stable fallback for FFT-related runtime failures
-- correcting video inference and face paste-back behavior to preserve original frame geometry more reliably
+- Resolving PyTorch and CUDA extension compatibility issues.
+- Installing a compatible version of nvdiffrast.
+- Configuring local pretrained model directories.
+- Resolving the face3dvae2 model path mismatch.
+- Adding preprocessing scripts for custom source images and target videos.
+- Preparing square-cropped 512 × 512 target videos.
+- Extending the inference frame limit from 80 to 152 frames.
 
-The original VFace repository remains the primary source for the full implementation. This directory is included to document the specific script-level changes used in our experimental pipeline.
+The original VividFace repository remains the primary source for the complete model implementation.
 
-## Only the modified scripts are provided.
+This directory documents the specific modifications and additional scripts used in our biometric face-swapping evaluation pipeline.
+
+## Only the modified and additional scripts are provided.
