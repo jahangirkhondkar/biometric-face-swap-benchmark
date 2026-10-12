@@ -33,7 +33,7 @@ used for dataset curation, best-frame selection, and pair construction.
 |   7   | DeepFaceLab   | Face Swapping   | Verified    | Runs unmodified; environment and CPU  |
 |       |               |                 |             |        extraction adjustments         |
 |-------|---------------|-----------------|-------------|---------------------------------------|
-|   8   | E4S           | Face Swapping   | Verified    | Runs with additional scripts          |
+|   8   | E4S           | Face Swapping   | Verified    | Runs with additional video scripts    |
 |-------|---------------|-----------------|-------------|---------------------------------------|
 |   9   | 3dSwap        | Face Swapping   |
 |-------|---------------|-----------------|-------------|---------------------------------------|
