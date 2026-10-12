@@ -63,10 +63,9 @@ Contains scripts for biometric evaluation of generated face-swapped images and v
 
 Contains additional utilities and supporting scripts used for experimental processing, automation, visualization, and related research activities.
 
+## Models
+The following models verified and eecuted for the project
 
-```
-## Face-Swapping Models
-```markdown
 # Face-Swapping Models
 
 |Serial | Model         | Type            | Status      |                Notes                  |
